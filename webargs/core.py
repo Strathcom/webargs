@@ -52,6 +52,7 @@ class ValidationError(WebargsError, ma.exceptions.ValidationError):
             self.args[0], self.status_code, self.headers
         )
 
+
 def _callable_or_raise(obj):
     """Makes sure an object is callable if it is not ``None``. If not
     callable, a ValueError is raised.
@@ -60,6 +61,7 @@ def _callable_or_raise(obj):
         raise ValueError('{0!r} is not callable.'.format(obj))
     else:
         return obj
+
 
 def get_field_names_for_argmap(argmap):
     if isinstance(argmap, ma.Schema):
@@ -78,6 +80,7 @@ def fill_in_missing_args(ret, argmap):
         ret[key] = missing
     return ret
 
+
 def argmap2schema(argmap, instance=False, **kwargs):
     """Generate a `marshmallow.Schema` class given a dictionary of argument
     names to `Fields <marshmallow.fields.Field>`.
@@ -88,6 +91,7 @@ def argmap2schema(argmap, instance=False, **kwargs):
     cls = type(str('ArgSchema'), (ma.Schema,), attrs)
     return cls if not instance else cls(**kwargs)
 
+
 def is_multiple(field):
     """Return whether or not `field` handles repeated/multi-value arguments."""
     return isinstance(field, ma.fields.List) and not hasattr(field, 'delimiter')
@@ -95,6 +99,7 @@ def is_multiple(field):
 
 def get_mimetype(content_type):
     return content_type.split(';')[0].strip() if content_type else None
+
 
 # Adapted from werkzeug: https://github.com/mitsuhiko/werkzeug/blob/master/werkzeug/wrappers.py
 def is_json(mimetype):
@@ -111,6 +116,7 @@ def is_json(mimetype):
     if mimetype.startswith('application/') and mimetype.endswith('+json'):
         return True
     return False
+
 
 def get_value(d, name, field):
     """Get a value from a dictionary. Handles ``MultiDict`` types when
@@ -139,6 +145,7 @@ def parse_json(s):
         s = s.decode('utf-8')
     return json.loads(s)
 
+
 def _ensure_list_of_callables(obj):
     if obj:
         if isinstance(obj, (list, tuple)):
@@ -150,6 +157,7 @@ def _ensure_list_of_callables(obj):
     else:
         validators = []
     return validators
+
 
 class Parser(object):
     """Base parser class that provides high-level implementation for parsing
@@ -175,6 +183,7 @@ class Parser(object):
         'headers': 'parse_headers',
         'cookies': 'parse_cookies',
         'files': 'parse_files',
+        'view': 'parse_view'
     }
 
     def __init__(self, locations=None, error_handler=None):
@@ -258,7 +267,7 @@ class Parser(object):
             schema = argmap2schema(argmap)()
         if not schema.strict:
             warnings.warn("It is highly recommended that you set strict=True on your schema "
-                "so that the parser's error handler will be invoked when expected.", UserWarning)
+                          "so that the parser's error handler will be invoked when expected.", UserWarning)
         return schema.load(data)
 
     def _on_validation_error(self, error):
@@ -409,6 +418,9 @@ class Parser(object):
                 else:
                     # Add parsed_args after other positional arguments
                     new_args = args + (parsed_args, )
+                    for key, value in dict(new_args[0]).iteritems():
+                        if key in kwargs:
+                            kwargs.pop(key, None)
                     return func(*new_args, **kwargs)
             return wrapper
         return decorator
@@ -512,9 +524,16 @@ class Parser(object):
         """
         return missing
 
+    def parse_view(self,  req, name, arg):
+        """Pull a value from the view args data of a request object or return
+        `missing` if the value cannot be found.
+        """
+        return missing
+
     def handle_error(self, error):
         """Called if an error occurs while parsing args. By default, just logs and
         raises ``error``.
         """
         logger.error(error)
         raise error
+

@@ -42,6 +42,7 @@ def abort(http_status_code, **kwargs):
 def is_json_request(req):
     return core.is_json(req.mimetype)
 
+
 class FlaskParser(core.Parser):
     """Flask request argument parser."""
 
@@ -81,6 +82,10 @@ class FlaskParser(core.Parser):
     def parse_files(self, req, name, field):
         """Pull a file from the request."""
         return core.get_value(req.files, name, field)
+
+    def parse_view(self, req, name, field):
+        """Pull a value from view_args data of request object"""
+        return core.get_value(req.view_args, name, field)
 
     def handle_error(self, error):
         """Handles errors during parsing. Aborts the current HTTP request and
