@@ -41,6 +41,14 @@ def test_parsing_get_args_in_request_context(testapp):
         args = parser.parse(hello_args)
         assert args == {'name': 'Fred'}
 
+def test_parsing_get_viewargs_in_request_context(testapp):
+    def dumb_view():
+        pass
+    testapp.add_url_rule('/myendpoint/<name>', view_func=dumb_view)
+    with testapp.test_request_context('/myendpoint/fred', method='get'):
+        args = parser.parse(hello_args, locations=('view', ))
+        assert args == {'name': 'fred'}
+
 def test_parsing_get_args_with_query_location_specified(testapp):
     with testapp.test_request_context('/myendpoint?name=Fred', method='get'):
         args = parser.parse(hello_args, locations=('query', ))
@@ -53,8 +61,8 @@ def test_parsing_get_args_default(testapp):
 
 def test_parsing_json_in_request_context(testapp):
     with testapp.test_request_context('/myendpoint', method='post',
-                                    data=json.dumps({'name': 'Fred'}),
-                                        content_type='application/json'):
+                                      data=json.dumps({'name': 'Fred'}),
+                                      content_type='application/json'):
         args = parser.parse(hello_args)
         assert args['name'] == 'Fred'
 
